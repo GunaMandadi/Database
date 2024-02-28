@@ -1,0 +1,192 @@
+use lms;
+
+-- create the address table
+CREATE TABLE address (
+	address_id INT primary key,
+    line1 VARCHAR(30),
+    line2 VARCHAR(30),
+    city VARCHAR(20),
+    state CHAR(2),
+    zip INT
+);
+
+-- create the book table
+create table book (
+	book_id int primary key,
+	title varchar(45),
+	author_name varchar(50),
+	year_published int,
+	quantity int
+);
+
+-- create the book_isbn table
+CREATE TABLE book_isbn(
+	isbn bigint primary key,
+    book_id int,
+    FOREIGN KEY (book_id) REFERENCES book(book_id)
+);
+
+-- create the library_member table
+CREATE TABLE library_member (
+	member_id INT PRIMARY KEY, 
+	first_name VARCHAR(25),
+	last_name VARCHAR(25),
+	email_address VARCHAR(35),
+	phone_number BIGINT,
+	membership_level VARCHAR(10),
+	address_id INT,
+    foreign key (address_id) references address(address_id)
+);
+
+-- create the checkout table
+CREATE TABLE checkout (
+	id INT PRIMARY KEY,
+	isbn BIGINT,
+	member_id INT,
+	checkout_date DATETIME,
+	due_date DATETIME,
+	is_returned BOOLEAN,
+    FOREIGN KEY (member_id) REFERENCES library_member(member_id),
+    FOREIGN KEY (isbn) REFERENCES book_isbn(isbn)
+);
+
+INSERT INTO book VALUES ('123', 'Head First Java', 'Bert Bates', '2014', '100'),
+('124', 'Effective Java', 'Joshua Bloch', '2015', '200'),
+('125', 'Java Concurrency in Practice', 'Tim Peierls', '2016', '250'),
+('234', 'Thinking in Java', 'Bruce Eckel', '2017', '200'),
+('240', 'ava: The Complete Reference', 'Herbert Schildt', '2017', '100'),
+('260', 'Java Programming', 'D.S. Malik', '2014', '50');
+
+INSERT INTO book_isbn VALUES ('0061120081', '123'),('0141182556',123),
+('0307277674', '124'),
+('1400033411', '124'),
+('0345803485', '260'),
+('0679755330', '234'),
+('0679720200', '260'),
+('0060567180 ', '125'),
+('0307475003', '234'),
+('0061122416', '125'),
+('0375706771', '123'),
+('0345378482', '260'),
+('0441172717', '123'),
+('0140441702', '124'),
+('0143105222', '125'),
+('0140443330', '125'),
+('0451524934', '125'),
+('0679734775', '260'),
+('0679732764', '123'),
+('038549081', '124');
+
+INSERT INTO address VALUES ('098', '123 Main Street', 'Suite 101', 'Anytown', 'NY', '12345'),
+('099', '456 Elm Street', 'Apt 202', 'Springfield', 'IL', '54321'),
+('089', '789 Oak Avenue', 'Unit B', 'Lakeside', 'CA', '67890'),
+('780', '321 Pine Road', 'Building C', 'Mountainville', 'TX', '98765'),
+('540', '654 Maple Lane', 'Floor 2', 'Riverdale', 'GA', '13579'),
+('650', '987 Birch Street', 'Suite 303', 'Brookside', 'FL', '24680');
+
+
+INSERT INTO library_member  VALUES ('1', 'Emily', 'Johnson', 'emily.johnson@example.com', '5551234567', 'assosiate', '89'),
+ ('2', 'Michael', 'Brown', 'michael.brown@example.com', '5551234568', 'associate', '98'),
+ ('3', 'Jessica', 'Martinez', 'jessica.martinez@example.com', '5551234569', 'student', '780'),
+ ('4', 'Christopher', 'Anderson', 'christopher.anderson@example.com', '5551234560', 'student', '89'),
+ ('5', 'Sarah', 'Thompson', 'sarah.thompson@example.com', '5551234570', 'vendor', '650'),
+ ('6', 'David', 'White', 'david.white@example.com', '5551234571', 'vendor', '650'),
+ ('7', 'Amanda', 'Garcia', 'amanda.garcia@example.com', '5551234572', 'student', '540'),
+ ('8', 'Matthew', 'Rodriguez', 'matthew.rodriguez@example.com', '5551234573', 'student', '540'),
+ ('9', 'Ashley', 'Wilson', 'ashley.wilson@example.com', '5551234574', 'associate', '98'),
+ ('10', 'James', 'Lee', 'james.lee@example.com', '5551234575', 'associate', '89');
+ 
+ select * from book_isbn;
+select * from book;
+select * from library_member;
+select * from address;
+select * from checkout;
+
+select * from library_member inner join address on library_member.address_id=address.address_id;
+
+select * from library_member lm inner join address a on lm.address_id=a.address_id
+ where lm.membership_level="Premium" and a.zip=62701;
+ 
+ select * from library_member lm left outer join address a on lm.address_id=a.address_id;
+ 
+ select * from library_member lm right outer join address a on lm.address_id=a.address_id;
+ 
+ -- Not supported Full outer join
+ -- select * from library_member lm full outer join address a on lm.address_id=a.address_id;
+ 
+-- create member
+-- find the member by name and mobile_number
+SELECT *
+FROM library_member
+WHERE first_name = 'John' 
+    AND last_name = 'Doe' 
+    AND phone_number = 1234567890;
+
+
+-- display all the members
+select * from library_member;
+
+-- checkout entries
+INSERT INTO checkout values(101,4243566740531,1,CURDATE(), DATE_ADD(CURDATE(), INTERVAL 15 DAY), FALSE);
+INSERT INTO checkout values(102,8287799401476,5,CURDATE(), DATE_ADD(CURDATE(), INTERVAL 15 DAY), FALSE);
+
+-- list all the books a member has checked out
+SELECT b.title, b.author_name, b.year_published
+FROM library_member m
+JOIN checkout c ON m.member_id = c.member_id
+JOIN book_isbn bi ON c.isbn = bi.isbn
+JOIN book b ON bi.book_id = b.book_id
+WHERE m.first_name = 'John' 
+    AND m.last_name = 'Doe';
+
+-- checkout a book for a given member and given book
+select * from checkout;
+select * from book_isbn;
+INSERT INTO checkout values(103,3540321979243,6,CURDATE(), DATE_ADD(CURDATE(), INTERVAL 15 DAY), FALSE);
+
+
+-- list avaialble books and quantity that can be checked out
+SELECT 
+    b.book_id,
+    b.title,
+    b.author_name,
+    b.year_published,
+    b.quantity - COALESCE(SUM(CASE WHEN c.is_returned = FALSE THEN 1 ELSE 0 END), 0) AS available_quantity
+FROM 
+    book b
+LEFT JOIN 
+    book_isbn bi ON b.book_id = bi.book_id
+LEFT JOIN 
+    checkout c ON bi.isbn = c.isbn
+GROUP BY 
+    b.book_id, b.title, b.author_name, b.year_published, b.quantity;
+
+-- list all the checkouts that are due in two days
+SELECT *
+FROM checkout
+WHERE DATEDIFF(due_date, CURRENT_DATE()) =15;
+
+-- list all the checkouts that are over due 
+SELECT *
+FROM checkout
+WHERE due_date < CURRENT_DATE();
+
+-- list all the books that are checked out today
+SELECT DISTINCT b.*
+FROM book b
+JOIN book_isbn bi ON b.book_id = bi.book_id
+JOIN checkout c ON bi.isbn = c.isbn
+WHERE c.checkout_date = CURRENT_DATE();
+
+
+-- creat a book
+
+-- display all isbns and their checkout status along with book information ( tital, author etc,.)
+SELECT bi.isbn, b.title, b.author_name, b.year_published, b.quantity,        
+       CASE 
+           WHEN c.is_returned = FALSE THEN 'Checked Out' 
+           ELSE 'Available' 
+       END AS checkout_status 
+FROM book b 
+JOIN book_isbn bi ON b.book_id = bi.book_id 
+LEFT JOIN checkout c ON bi.isbn = c.isbn;
